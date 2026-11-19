@@ -128,9 +128,9 @@ h2 {
 
 .total-card {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
-  background: var(--primary);
+  background: hotpink;
   color: white;
 }
 
