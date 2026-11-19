@@ -4,6 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Expense Tracker</title>
+  <!-- Apply a saved light/dark choice right away, before the page is drawn,
+       so the page doesn't flash the wrong colors while loading -->
+  <script>
+    try {
+      const savedTheme = localStorage.getItem("theme");
+      if (savedTheme === "light" || savedTheme === "dark") {
+        document.documentElement.setAttribute("data-theme", savedTheme);
+      }
+    } catch {}
+  </script>
   <!-- The styling (normally in style.css) -->
   <style>
 /* ---------- Colors and basic settings ---------- */
@@ -16,6 +26,56 @@
   --primary: #4f46e5;
   --primary-hover: #4338ca;
   --danger: #dc2626;
+  --input-bg: #ffffff;
+  --soft: #eef2ff;          /* light purple: tags, bar tracks, hover */
+  --accent-text: #4f46e5;   /* purple text on light backgrounds */
+  --bar: #4f46e5;
+  --danger-soft: #fee2e2;
+  --editing-bg: #f8f9ff;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.04);
+  --focus-ring: rgba(79, 70, 229, 0.15);
+  color-scheme: light;      /* tells the browser to draw date pickers etc. in light */
+}
+
+/* ---------- Dark mode ----------
+   Used when your computer is set to dark mode (unless you chose light with
+   the toggle button), or when you choose dark with the toggle button. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1117;
+    --card: #1a1d27;
+    --text: #e5e7eb;
+    --muted: #9ca3af;
+    --border: #2e3240;
+    --danger: #f87171;
+    --input-bg: #11131a;
+    --soft: #262a45;
+    --accent-text: #a5b4fc;
+    --bar: #818cf8;
+    --danger-soft: #3b1d1d;
+    --editing-bg: #202436;
+    --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    --focus-ring: rgba(129, 140, 248, 0.3);
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0f1117;
+  --card: #1a1d27;
+  --text: #e5e7eb;
+  --muted: #9ca3af;
+  --border: #2e3240;
+  --danger: #f87171;
+  --input-bg: #11131a;
+  --soft: #262a45;
+  --accent-text: #a5b4fc;
+  --bar: #818cf8;
+  --danger-soft: #3b1d1d;
+  --editing-bg: #202436;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --focus-ring: rgba(129, 140, 248, 0.3);
+  color-scheme: dark;
 }
 
 * {
@@ -37,6 +97,29 @@ body {
 }
 
 /* ---------- Header ---------- */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.theme-toggle {
+  flex-shrink: 0;
+  margin-top: 6px;
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--text);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.theme-toggle:hover {
+  border-color: var(--primary);
+}
+
 h1 {
   margin: 0;
   font-size: 2rem;
@@ -58,7 +141,7 @@ h2 {
   border-radius: 12px;
   padding: 24px;
   margin-bottom: 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow);
 }
 
 .total-card {
@@ -104,7 +187,7 @@ select {
   border: 1px solid var(--border);
   border-radius: 8px;
   font-size: 1rem;
-  background: white;
+  background: var(--input-bg);
   color: var(--text);
 }
 
@@ -112,7 +195,7 @@ input:focus,
 select:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+  box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
 .btn-primary {
@@ -165,8 +248,8 @@ th {
   display: inline-block;
   padding: 2px 10px;
   border-radius: 999px;
-  background: #eef2ff;
-  color: var(--primary);
+  background: var(--soft);
+  color: var(--accent-text);
   font-size: 0.85rem;
 }
 
@@ -181,7 +264,7 @@ th {
 }
 
 .btn-delete:hover {
-  background: #fee2e2;
+  background: var(--danger-soft);
   color: var(--danger);
 }
 
@@ -218,14 +301,14 @@ th {
 
 .bar-track {
   height: 10px;
-  background: #eef2ff;
+  background: var(--soft);
   border-radius: 999px;
   overflow: hidden;
 }
 
 .bar-fill {
   height: 100%;
-  background: var(--primary);
+  background: var(--bar);
   border-radius: 999px;
 }
 
@@ -249,8 +332,8 @@ th {
 }
 
 .btn-edit:hover {
-  background: #eef2ff;
-  color: var(--primary);
+  background: var(--soft);
+  color: var(--accent-text);
 }
 
 .btn-save {
@@ -264,7 +347,7 @@ th {
 }
 
 .editing-row td {
-  background: #f8f9ff;
+  background: var(--editing-bg);
   padding: 8px 4px;
 }
 
@@ -307,8 +390,12 @@ tfoot td {
 <body>
   <main class="container">
     <header>
-      <h1>Expense Tracker</h1>
-      <p class="subtitle">Keep track of where your money goes.</p>
+      <div>
+        <h1>Expense Tracker</h1>
+        <p class="subtitle">Keep track of where your money goes.</p>
+      </div>
+      <!-- Switches between light and dark. JavaScript sets its label. -->
+      <button type="button" id="theme-toggle" class="theme-toggle">Dark mode</button>
     </header>
 
     <!-- Total spent -->
@@ -808,7 +895,42 @@ function cancelEdit() {
   renderTable();
 }
 
-// ---------- 11. When the page first loads ----------
+// ---------- 11. Light / dark mode ----------
+// By default the page follows your computer's appearance setting.
+// Clicking the button picks the opposite of what's showing and remembers it.
+const themeToggle = document.getElementById("theme-toggle");
+const systemDark = window.matchMedia("(prefers-color-scheme: dark)");
+
+// Is the page showing dark colors right now?
+function isDark() {
+  const chosen = document.documentElement.getAttribute("data-theme");
+  if (chosen) {
+    return chosen === "dark"; // the user picked one with the button
+  }
+  return systemDark.matches; // otherwise, follow the computer's setting
+}
+
+// The button offers the mode you're NOT in
+function updateThemeButton() {
+  themeToggle.textContent = isDark() ? "☀️ Light mode" : "🌙 Dark mode";
+}
+
+themeToggle.addEventListener("click", function () {
+  const newTheme = isDark() ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", newTheme);
+  try {
+    localStorage.setItem("theme", newTheme);
+  } catch {
+    // Can't remember the choice (e.g. private browsing); it still works for now.
+  }
+  updateThemeButton();
+});
+
+// If the computer switches between light and dark, update the button's label
+systemDark.addEventListener("change", updateThemeButton);
+
+// ---------- 12. When the page first loads ----------
+updateThemeButton();
 dateInput.value = todayString(); // start the date box on today
 render();
   </script>
