@@ -401,6 +401,41 @@ function cancelEdit() {
   renderTable();
 }
 
-// ---------- 11. When the page first loads ----------
+// ---------- 11. Light / dark mode ----------
+// By default the page follows your computer's appearance setting.
+// Clicking the button picks the opposite of what's showing and remembers it.
+const themeToggle = document.getElementById("theme-toggle");
+const systemDark = window.matchMedia("(prefers-color-scheme: dark)");
+
+// Is the page showing dark colors right now?
+function isDark() {
+  const chosen = document.documentElement.getAttribute("data-theme");
+  if (chosen) {
+    return chosen === "dark"; // the user picked one with the button
+  }
+  return systemDark.matches; // otherwise, follow the computer's setting
+}
+
+// The button offers the mode you're NOT in
+function updateThemeButton() {
+  themeToggle.textContent = isDark() ? "☀️ Light mode" : "🌙 Dark mode";
+}
+
+themeToggle.addEventListener("click", function () {
+  const newTheme = isDark() ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", newTheme);
+  try {
+    localStorage.setItem("theme", newTheme);
+  } catch {
+    // Can't remember the choice (e.g. private browsing); it still works for now.
+  }
+  updateThemeButton();
+});
+
+// If the computer switches between light and dark, update the button's label
+systemDark.addEventListener("change", updateThemeButton);
+
+// ---------- 12. When the page first loads ----------
+updateThemeButton();
 dateInput.value = todayString(); // start the date box on today
 render();

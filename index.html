@@ -4,14 +4,28 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Expense Tracker</title>
+  <!-- Apply a saved light/dark choice right away, before the page is drawn,
+       so the page doesn't flash the wrong colors while loading -->
+  <script>
+    try {
+      const savedTheme = localStorage.getItem("theme");
+      if (savedTheme === "light" || savedTheme === "dark") {
+        document.documentElement.setAttribute("data-theme", savedTheme);
+      }
+    } catch {}
+  </script>
   <!-- Link to our stylesheet (controls how the page looks) -->
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <main class="container">
     <header>
-      <h1>Expense Tracker</h1>
-      <p class="subtitle">Keep track of where your money goes.</p>
+      <div>
+        <h1>Expense Tracker</h1>
+        <p class="subtitle">Keep track of where your money goes.</p>
+      </div>
+      <!-- Switches between light and dark. JavaScript sets its label. -->
+      <button type="button" id="theme-toggle" class="theme-toggle">Dark mode</button>
     </header>
 
     <!-- Total spent -->
