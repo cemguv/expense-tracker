@@ -9,6 +9,8 @@ const totalDisplay = document.getElementById("total");
 const emptyMessage = document.getElementById("empty-message");
 const categorySummary = document.getElementById("category-summary");
 const categoryEmpty = document.getElementById("category-empty");
+const categoryTable = document.getElementById("category-table");
+const categoryTableFooter = document.getElementById("category-table-footer");
 
 // ---------- 2. Load saved expenses ----------
 // localStorage is a small storage area built into your browser.
@@ -159,7 +161,71 @@ function renderCategories(total) {
   categoryEmpty.style.display = expenses.length === 0 ? "block" : "none";
 }
 
-// ---------- 6. Redraw everything ----------
+// ---------- 6. Draw the category totals table ----------
+function renderCategoryTable(total) {
+  categoryTable.innerHTML = "";
+  categoryTableFooter.innerHTML = "";
+
+  // Start with every category in the dropdown, so ones with no spending show $0.
+  // Read straight from the <option> lines, so new categories appear automatically.
+  const names = Array.from(categoryInput.options).map(function (option) {
+    return option.value;
+  });
+
+  // Also include any category used by a saved expense but no longer in the dropdown
+  expenses.forEach(function (expense) {
+    if (!names.includes(expense.category)) {
+      names.push(expense.category);
+    }
+  });
+
+  // For each category, count its expenses and add up their amounts
+  const rows = names.map(function (name) {
+    const matching = expenses.filter(function (expense) {
+      return expense.category === name;
+    });
+    const sum = matching.reduce(function (s, expense) {
+      return s + expense.amount;
+    }, 0);
+    return { name: name, count: matching.length, sum: sum };
+  });
+
+  // Biggest total first. Categories at $0 keep their dropdown order at the bottom.
+  rows.sort(function (a, b) {
+    return b.sum - a.sum;
+  });
+
+  rows.forEach(function (row) {
+    categoryTable.appendChild(makeRow(row.name, row.count, row.sum, row.count === 0));
+  });
+
+  // Footer row: the grand total across all categories
+  categoryTableFooter.appendChild(makeRow("All categories", expenses.length, total, false));
+}
+
+// Build one table row: name | count | total
+function makeRow(name, count, sum, isZero) {
+  const tr = document.createElement("tr");
+  if (isZero) {
+    tr.className = "zero-row";
+  }
+
+  const nameCell = document.createElement("td");
+  nameCell.textContent = name;
+
+  const countCell = document.createElement("td");
+  countCell.className = "right";
+  countCell.textContent = count;
+
+  const sumCell = document.createElement("td");
+  sumCell.className = "right";
+  sumCell.textContent = formatMoney(sum);
+
+  tr.append(nameCell, countCell, sumCell);
+  return tr;
+}
+
+// ---------- 7. Redraw everything ----------
 function render() {
   const total = expenses.reduce(function (sum, expense) {
     return sum + expense.amount;
@@ -168,9 +234,10 @@ function render() {
 
   renderTable();
   renderCategories(total);
+  renderCategoryTable(total);
 }
 
-// ---------- 7. Add a new expense when the form is submitted ----------
+// ---------- 8. Add a new expense when the form is submitted ----------
 form.addEventListener("submit", function (event) {
   event.preventDefault(); // stop the page from reloading
 
@@ -200,7 +267,7 @@ form.addEventListener("submit", function (event) {
   nameInput.focus();             // put the cursor back in the Name box
 });
 
-// ---------- 8. Delete an expense ----------
+// ---------- 9. Delete an expense ----------
 function deleteExpense(id) {
   expenses = expenses.filter(function (expense) {
     return expense.id !== id;
@@ -209,6 +276,6 @@ function deleteExpense(id) {
   render();
 }
 
-// ---------- 9. When the page first loads ----------
+// ---------- 10. When the page first loads ----------
 dateInput.value = todayString(); // start the date box on today
 render();

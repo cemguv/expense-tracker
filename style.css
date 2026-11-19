@@ -221,6 +221,17 @@ th {
   border-radius: 999px;
 }
 
+/* ---------- Category totals table ---------- */
+.zero-row td {
+  color: var(--muted); /* fade out categories with no spending */
+}
+
+tfoot td {
+  font-weight: 700;
+  border-bottom: none;
+  border-top: 2px solid var(--border);
+}
+
 .empty {
   text-align: center;
   color: var(--muted);
