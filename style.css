@@ -221,6 +221,56 @@ th {
   border-radius: 999px;
 }
 
+/* ---------- Editing a row ---------- */
+.actions {
+  white-space: nowrap; /* keep the two buttons side by side */
+}
+
+.btn-edit,
+.btn-save {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.btn-edit {
+  color: var(--muted);
+}
+
+.btn-edit:hover {
+  background: #eef2ff;
+  color: var(--primary);
+}
+
+.btn-save {
+  background: var(--primary);
+  color: white;
+  font-weight: 600;
+}
+
+.btn-save:hover {
+  background: var(--primary-hover);
+}
+
+.editing-row td {
+  background: #f8f9ff;
+  padding: 8px 4px;
+}
+
+.edit-input {
+  width: 100%;
+  min-width: 90px;
+  padding: 6px 8px;
+  font-size: 0.9rem;
+}
+
+.amount-input {
+  text-align: right;
+}
+
 /* ---------- Category totals table ---------- */
 .zero-row td {
   color: var(--muted); /* fade out categories with no spending */

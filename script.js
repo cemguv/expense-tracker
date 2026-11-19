@@ -18,6 +18,9 @@ const categoryTableFooter = document.getElementById("category-table-footer");
 const STORAGE_KEY = "expenses";
 let expenses = loadExpenses();
 
+// The id of the expense currently being edited (null means none)
+let editingId = null;
+
 function loadExpenses() {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -70,6 +73,12 @@ function renderTable() {
   });
 
   sorted.forEach(function (expense) {
+    // The row being edited is drawn as input boxes instead of plain text
+    if (expense.id === editingId) {
+      expenseList.appendChild(makeEditRow(expense));
+      return;
+    }
+
     const row = document.createElement("tr");
 
     const dateCell = document.createElement("td");
@@ -90,14 +99,23 @@ function renderTable() {
     amountCell.textContent = formatMoney(expense.amount);
 
     const actionCell = document.createElement("td");
-    actionCell.className = "right";
+    actionCell.className = "right actions";
+
+    const editButton = document.createElement("button");
+    editButton.className = "btn-edit";
+    editButton.textContent = "Edit";
+    editButton.addEventListener("click", function () {
+      editingId = expense.id; // remember which row is being edited
+      renderTable();
+    });
+
     const deleteButton = document.createElement("button");
     deleteButton.className = "btn-delete";
     deleteButton.textContent = "Delete";
     deleteButton.addEventListener("click", function () {
       deleteExpense(expense.id);
     });
-    actionCell.appendChild(deleteButton);
+    actionCell.append(editButton, deleteButton);
 
     row.append(dateCell, nameCell, categoryCell, amountCell, actionCell);
     expenseList.appendChild(row);
@@ -105,6 +123,84 @@ function renderTable() {
 
   // Show the "no expenses" message only when the list is empty
   emptyMessage.style.display = expenses.length === 0 ? "block" : "none";
+}
+
+// Build the editable version of a row: input boxes filled with the current values
+function makeEditRow(expense) {
+  const row = document.createElement("tr");
+  row.className = "editing-row";
+
+  const dateBox = document.createElement("input");
+  dateBox.type = "date";
+  dateBox.className = "edit-input";
+  dateBox.value = expense.date || "";
+  dateBox.setAttribute("aria-label", "Date");
+
+  const nameBox = document.createElement("input");
+  nameBox.type = "text";
+  nameBox.className = "edit-input";
+  nameBox.value = expense.name;
+  nameBox.setAttribute("aria-label", "Name");
+
+  // Copy the choices from the form's Category dropdown
+  const categoryBox = document.createElement("select");
+  categoryBox.className = "edit-input";
+  categoryBox.setAttribute("aria-label", "Category");
+  Array.from(categoryInput.options).forEach(function (option) {
+    categoryBox.appendChild(new Option(option.value, option.value));
+  });
+  // Keep an old category even if it's no longer in the dropdown
+  if (!Array.from(categoryBox.options).some(function (o) { return o.value === expense.category; })) {
+    categoryBox.appendChild(new Option(expense.category, expense.category));
+  }
+  categoryBox.value = expense.category;
+
+  const amountBox = document.createElement("input");
+  amountBox.type = "number";
+  amountBox.className = "edit-input amount-input";
+  amountBox.min = "0.01";
+  amountBox.step = "0.01";
+  amountBox.value = expense.amount.toFixed(2); // show 42.5 as "42.50"
+  amountBox.setAttribute("aria-label", "Amount");
+
+  const saveButton = document.createElement("button");
+  saveButton.className = "btn-save";
+  saveButton.textContent = "Save";
+  saveButton.addEventListener("click", function () {
+    saveEdit(expense.id, nameBox.value, amountBox.value, categoryBox.value, dateBox.value);
+  });
+
+  const cancelButton = document.createElement("button");
+  cancelButton.className = "btn-delete";
+  cancelButton.textContent = "Cancel";
+  cancelButton.addEventListener("click", cancelEdit);
+
+  // Keyboard shortcuts while editing: Return saves, Escape cancels
+  row.addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+      saveButton.click();
+    } else if (event.key === "Escape") {
+      cancelEdit();
+    }
+  });
+
+  // Put each box in its own cell, in the same order as the normal row
+  [dateBox, nameBox, categoryBox].forEach(function (box) {
+    const cell = document.createElement("td");
+    cell.appendChild(box);
+    row.appendChild(cell);
+  });
+  const amountCell = document.createElement("td");
+  amountCell.className = "right";
+  amountCell.appendChild(amountBox);
+  const actionCell = document.createElement("td");
+  actionCell.className = "right actions";
+  actionCell.append(saveButton, cancelButton);
+  row.append(amountCell, actionCell);
+
+  // Put the cursor in the Name box, ready to type
+  setTimeout(function () { nameBox.focus(); }, 0);
+  return row;
 }
 
 // ---------- 5. Draw the spending-by-category bars ----------
@@ -276,6 +372,35 @@ function deleteExpense(id) {
   render();
 }
 
-// ---------- 10. When the page first loads ----------
+// ---------- 10. Save or cancel an edit ----------
+function saveEdit(id, name, amountText, category, date) {
+  name = name.trim();
+  const amount = parseFloat(amountText);
+
+  if (name === "" || isNaN(amount) || amount <= 0) {
+    alert("Please enter a name and an amount greater than 0.");
+    return; // stay in edit mode so nothing typed is lost
+  }
+
+  // Find the expense with this id and update its values
+  const expense = expenses.find(function (e) {
+    return e.id === id;
+  });
+  expense.name = name;
+  expense.amount = amount;
+  expense.category = category;
+  expense.date = date; // may be empty for old undated expenses
+
+  editingId = null; // leave edit mode
+  saveExpenses();
+  render(); // redraws the total, the bars and the category totals too
+}
+
+function cancelEdit() {
+  editingId = null; // leave edit mode without changing anything
+  renderTable();
+}
+
+// ---------- 11. When the page first loads ----------
 dateInput.value = todayString(); // start the date box on today
 render();
