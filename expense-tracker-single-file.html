@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Expense Tracker</title>
+  <!-- The styling (normally in style.css) -->
+  <style>
+/* ---------- Colors and basic settings ---------- */
+:root {
+  --bg: #f4f6fb;
+  --card: #ffffff;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --primary: #4f46e5;
+  --primary-hover: #4338ca;
+  --danger: #dc2626;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.container {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 40px 16px;
+}
+
+/* ---------- Header ---------- */
+h1 {
+  margin: 0;
+  font-size: 2rem;
+}
+
+.subtitle {
+  margin: 4px 0 24px;
+  color: var(--muted);
+}
+
+h2 {
+  margin: 0 0 16px;
+  font-size: 1.1rem;
+}
+
+/* ---------- Cards (the white boxes) ---------- */
+.card {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.total-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--primary);
+  color: white;
+}
+
+.total-label {
+  font-size: 1rem;
+  opacity: 0.9;
+}
+
+.total-amount {
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+/* ---------- Form ---------- */
+form {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 12px;
+  align-items: end;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+}
+
+label {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+input,
+select {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 1rem;
+  background: white;
+  color: var(--text);
+}
+
+input:focus,
+select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+}
+
+.btn-primary {
+  grid-column: 1 / -1; /* make the button span the full width */
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  background: var(--primary);
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-primary:hover {
+  background: var(--primary-hover);
+}
+
+/* ---------- Table ---------- */
+.table-wrapper {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 12px 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+th {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.right {
+  text-align: right;
+}
+
+.category-tag {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: var(--primary);
+  font-size: 0.85rem;
+}
+
+.btn-delete {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.btn-delete:hover {
+  background: #fee2e2;
+  color: var(--danger);
+}
+
+.empty {
+  text-align: center;
+  color: var(--muted);
+  margin: 16px 0 0;
+}
+
+/* ---------- Small screens (phones) ---------- */
+@media (max-width: 600px) {
+  form {
+    grid-template-columns: 1fr;
+  }
+}
+  </style>
+</head>
+<body>
+  <main class="container">
+    <header>
+      <h1>Expense Tracker</h1>
+      <p class="subtitle">Keep track of where your money goes.</p>
+    </header>
+
+    <!-- Total spent -->
+    <section class="card total-card">
+      <span class="total-label">Total spent</span>
+      <span id="total" class="total-amount">$0.00</span>
+    </section>
+
+    <!-- Form for adding a new expense -->
+    <section class="card">
+      <h2>Add an expense</h2>
+      <form id="expense-form">
+        <div class="field">
+          <label for="name">Name</label>
+          <input type="text" id="name" placeholder="e.g. Groceries" required>
+        </div>
+
+        <div class="field">
+          <label for="amount">Amount</label>
+          <input type="number" id="amount" placeholder="0.00" min="0.01" step="0.01" required>
+        </div>
+
+        <div class="field">
+          <label for="category">Category</label>
+          <select id="category" required>
+            <option value="Food">Food</option>
+            <option value="Transport">Transport</option>
+            <option value="Housing">Housing</option>
+            <option value="Entertainment">Entertainment</option>
+            <option value="Shopping">Shopping</option>
+            <option value="Health">Health</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <button type="submit" class="btn-primary">Add expense</button>
+      </form>
+    </section>
+
+    <!-- Table listing all expenses -->
+    <section class="card">
+      <h2>Your expenses</h2>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Category</th>
+              <th class="right">Amount</th>
+              <th></th>
+            </tr>
+          </thead>
+          <!-- JavaScript fills this in with one row per expense -->
+          <tbody id="expense-list"></tbody>
+        </table>
+      </div>
+      <p id="empty-message" class="empty">No expenses yet. Add your first one above.</p>
+    </section>
+  </main>
+
+  <!-- The behavior (normally in script.js) -->
+  <script>
+// ---------- 1. Grab the HTML elements we need ----------
+const form = document.getElementById("expense-form");
+const nameInput = document.getElementById("name");
+const amountInput = document.getElementById("amount");
+const categoryInput = document.getElementById("category");
+const expenseList = document.getElementById("expense-list");
+const totalDisplay = document.getElementById("total");
+const emptyMessage = document.getElementById("empty-message");
+
+// ---------- 2. Load saved expenses ----------
+// localStorage is a small storage area built into your browser.
+// It keeps data on your computer, even after you close the tab.
+const STORAGE_KEY = "expenses";
+let expenses = loadExpenses();
+
+function loadExpenses() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    return saved ? JSON.parse(saved) : [];
+  } catch {
+    return []; // if anything goes wrong, start with an empty list
+  }
+}
+
+function saveExpenses() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses));
+  } catch {
+    // Saving can fail in private browsing; the app still works for this visit.
+  }
+}
+
+// ---------- 3. Helper: format a number as money ----------
+function formatMoney(value) {
+  return value.toLocaleString(undefined, { style: "currency", currency: "USD" });
+}
+
+// ---------- 4. Draw the table and total on the page ----------
+function render() {
+  expenseList.innerHTML = ""; // clear the old rows
+
+  expenses.forEach(function (expense) {
+    const row = document.createElement("tr");
+
+    const nameCell = document.createElement("td");
+    nameCell.textContent = expense.name; // textContent is safe against odd input
+
+    const categoryCell = document.createElement("td");
+    const tag = document.createElement("span");
+    tag.className = "category-tag";
+    tag.textContent = expense.category;
+    categoryCell.appendChild(tag);
+
+    const amountCell = document.createElement("td");
+    amountCell.className = "right";
+    amountCell.textContent = formatMoney(expense.amount);
+
+    const actionCell = document.createElement("td");
+    actionCell.className = "right";
+    const deleteButton = document.createElement("button");
+    deleteButton.className = "btn-delete";
+    deleteButton.textContent = "Delete";
+    deleteButton.addEventListener("click", function () {
+      deleteExpense(expense.id);
+    });
+    actionCell.appendChild(deleteButton);
+
+    row.append(nameCell, categoryCell, amountCell, actionCell);
+    expenseList.appendChild(row);
+  });
+
+  // Add up all the amounts
+  const total = expenses.reduce(function (sum, expense) {
+    return sum + expense.amount;
+  }, 0);
+  totalDisplay.textContent = formatMoney(total);
+
+  // Show the "no expenses" message only when the list is empty
+  emptyMessage.style.display = expenses.length === 0 ? "block" : "none";
+}
+
+// ---------- 5. Add a new expense when the form is submitted ----------
+form.addEventListener("submit", function (event) {
+  event.preventDefault(); // stop the page from reloading
+
+  const name = nameInput.value.trim();
+  const amount = parseFloat(amountInput.value);
+  const category = categoryInput.value;
+
+  if (name === "" || isNaN(amount) || amount <= 0) {
+    alert("Please enter a name and an amount greater than 0.");
+    return;
+  }
+
+  expenses.push({
+    id: Date.now(), // a unique number so we can find this expense later
+    name: name,
+    amount: amount,
+    category: category,
+  });
+
+  saveExpenses();
+  render();
+
+  form.reset();      // clear the inputs
+  nameInput.focus(); // put the cursor back in the Name box
+});
+
+// ---------- 6. Delete an expense ----------
+function deleteExpense(id) {
+  expenses = expenses.filter(function (expense) {
+    return expense.id !== id;
+  });
+  saveExpenses();
+  render();
+}
+
+// ---------- 7. Draw the page once when it first loads ----------
+render();
+  </script>
+</body>
+</html>
