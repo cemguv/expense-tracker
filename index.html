@@ -65,6 +65,25 @@
       <p id="category-empty" class="empty">Your category breakdown will appear here.</p>
     </section>
 
+    <!-- Summary table: count and total for every category -->
+    <section class="card">
+      <h2>Category totals</h2>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th class="right">Expenses</th>
+              <th class="right">Total</th>
+            </tr>
+          </thead>
+          <!-- JavaScript fills these in -->
+          <tbody id="category-table"></tbody>
+          <tfoot id="category-table-footer"></tfoot>
+        </table>
+      </div>
+    </section>
+
     <!-- Table listing all expenses -->
     <section class="card">
       <h2>Your expenses</h2>

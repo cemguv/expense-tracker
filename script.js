@@ -9,12 +9,17 @@ const totalDisplay = document.getElementById("total");
 const emptyMessage = document.getElementById("empty-message");
 const categorySummary = document.getElementById("category-summary");
 const categoryEmpty = document.getElementById("category-empty");
+const categoryTable = document.getElementById("category-table");
+const categoryTableFooter = document.getElementById("category-table-footer");
 
 // ---------- 2. Load saved expenses ----------
 // localStorage is a small storage area built into your browser.
 // It keeps data on your computer, even after you close the tab.
 const STORAGE_KEY = "expenses";
 let expenses = loadExpenses();
+
+// The id of the expense currently being edited (null means none)
+let editingId = null;
 
 function loadExpenses() {
   try {
@@ -68,6 +73,12 @@ function renderTable() {
   });
 
   sorted.forEach(function (expense) {
+    // The row being edited is drawn as input boxes instead of plain text
+    if (expense.id === editingId) {
+      expenseList.appendChild(makeEditRow(expense));
+      return;
+    }
+
     const row = document.createElement("tr");
 
     const dateCell = document.createElement("td");
@@ -88,14 +99,23 @@ function renderTable() {
     amountCell.textContent = formatMoney(expense.amount);
 
     const actionCell = document.createElement("td");
-    actionCell.className = "right";
+    actionCell.className = "right actions";
+
+    const editButton = document.createElement("button");
+    editButton.className = "btn-edit";
+    editButton.textContent = "Edit";
+    editButton.addEventListener("click", function () {
+      editingId = expense.id; // remember which row is being edited
+      renderTable();
+    });
+
     const deleteButton = document.createElement("button");
     deleteButton.className = "btn-delete";
     deleteButton.textContent = "Delete";
     deleteButton.addEventListener("click", function () {
       deleteExpense(expense.id);
     });
-    actionCell.appendChild(deleteButton);
+    actionCell.append(editButton, deleteButton);
 
     row.append(dateCell, nameCell, categoryCell, amountCell, actionCell);
     expenseList.appendChild(row);
@@ -103,6 +123,84 @@ function renderTable() {
 
   // Show the "no expenses" message only when the list is empty
   emptyMessage.style.display = expenses.length === 0 ? "block" : "none";
+}
+
+// Build the editable version of a row: input boxes filled with the current values
+function makeEditRow(expense) {
+  const row = document.createElement("tr");
+  row.className = "editing-row";
+
+  const dateBox = document.createElement("input");
+  dateBox.type = "date";
+  dateBox.className = "edit-input";
+  dateBox.value = expense.date || "";
+  dateBox.setAttribute("aria-label", "Date");
+
+  const nameBox = document.createElement("input");
+  nameBox.type = "text";
+  nameBox.className = "edit-input";
+  nameBox.value = expense.name;
+  nameBox.setAttribute("aria-label", "Name");
+
+  // Copy the choices from the form's Category dropdown
+  const categoryBox = document.createElement("select");
+  categoryBox.className = "edit-input";
+  categoryBox.setAttribute("aria-label", "Category");
+  Array.from(categoryInput.options).forEach(function (option) {
+    categoryBox.appendChild(new Option(option.value, option.value));
+  });
+  // Keep an old category even if it's no longer in the dropdown
+  if (!Array.from(categoryBox.options).some(function (o) { return o.value === expense.category; })) {
+    categoryBox.appendChild(new Option(expense.category, expense.category));
+  }
+  categoryBox.value = expense.category;
+
+  const amountBox = document.createElement("input");
+  amountBox.type = "number";
+  amountBox.className = "edit-input amount-input";
+  amountBox.min = "0.01";
+  amountBox.step = "0.01";
+  amountBox.value = expense.amount.toFixed(2); // show 42.5 as "42.50"
+  amountBox.setAttribute("aria-label", "Amount");
+
+  const saveButton = document.createElement("button");
+  saveButton.className = "btn-save";
+  saveButton.textContent = "Save";
+  saveButton.addEventListener("click", function () {
+    saveEdit(expense.id, nameBox.value, amountBox.value, categoryBox.value, dateBox.value);
+  });
+
+  const cancelButton = document.createElement("button");
+  cancelButton.className = "btn-delete";
+  cancelButton.textContent = "Cancel";
+  cancelButton.addEventListener("click", cancelEdit);
+
+  // Keyboard shortcuts while editing: Return saves, Escape cancels
+  row.addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+      saveButton.click();
+    } else if (event.key === "Escape") {
+      cancelEdit();
+    }
+  });
+
+  // Put each box in its own cell, in the same order as the normal row
+  [dateBox, nameBox, categoryBox].forEach(function (box) {
+    const cell = document.createElement("td");
+    cell.appendChild(box);
+    row.appendChild(cell);
+  });
+  const amountCell = document.createElement("td");
+  amountCell.className = "right";
+  amountCell.appendChild(amountBox);
+  const actionCell = document.createElement("td");
+  actionCell.className = "right actions";
+  actionCell.append(saveButton, cancelButton);
+  row.append(amountCell, actionCell);
+
+  // Put the cursor in the Name box, ready to type
+  setTimeout(function () { nameBox.focus(); }, 0);
+  return row;
 }
 
 // ---------- 5. Draw the spending-by-category bars ----------
@@ -159,7 +257,71 @@ function renderCategories(total) {
   categoryEmpty.style.display = expenses.length === 0 ? "block" : "none";
 }
 
-// ---------- 6. Redraw everything ----------
+// ---------- 6. Draw the category totals table ----------
+function renderCategoryTable(total) {
+  categoryTable.innerHTML = "";
+  categoryTableFooter.innerHTML = "";
+
+  // Start with every category in the dropdown, so ones with no spending show $0.
+  // Read straight from the <option> lines, so new categories appear automatically.
+  const names = Array.from(categoryInput.options).map(function (option) {
+    return option.value;
+  });
+
+  // Also include any category used by a saved expense but no longer in the dropdown
+  expenses.forEach(function (expense) {
+    if (!names.includes(expense.category)) {
+      names.push(expense.category);
+    }
+  });
+
+  // For each category, count its expenses and add up their amounts
+  const rows = names.map(function (name) {
+    const matching = expenses.filter(function (expense) {
+      return expense.category === name;
+    });
+    const sum = matching.reduce(function (s, expense) {
+      return s + expense.amount;
+    }, 0);
+    return { name: name, count: matching.length, sum: sum };
+  });
+
+  // Biggest total first. Categories at $0 keep their dropdown order at the bottom.
+  rows.sort(function (a, b) {
+    return b.sum - a.sum;
+  });
+
+  rows.forEach(function (row) {
+    categoryTable.appendChild(makeRow(row.name, row.count, row.sum, row.count === 0));
+  });
+
+  // Footer row: the grand total across all categories
+  categoryTableFooter.appendChild(makeRow("All categories", expenses.length, total, false));
+}
+
+// Build one table row: name | count | total
+function makeRow(name, count, sum, isZero) {
+  const tr = document.createElement("tr");
+  if (isZero) {
+    tr.className = "zero-row";
+  }
+
+  const nameCell = document.createElement("td");
+  nameCell.textContent = name;
+
+  const countCell = document.createElement("td");
+  countCell.className = "right";
+  countCell.textContent = count;
+
+  const sumCell = document.createElement("td");
+  sumCell.className = "right";
+  sumCell.textContent = formatMoney(sum);
+
+  tr.append(nameCell, countCell, sumCell);
+  return tr;
+}
+
+// ---------- 7. Redraw everything ----------
 function render() {
   const total = expenses.reduce(function (sum, expense) {
     return sum + expense.amount;
@@ -168,9 +330,10 @@ function render() {
 
   renderTable();
   renderCategories(total);
+  renderCategoryTable(total);
 }
 
-// ---------- 7. Add a new expense when the form is submitted ----------
+// ---------- 8. Add a new expense when the form is submitted ----------
 form.addEventListener("submit", function (event) {
   event.preventDefault(); // stop the page from reloading
 
@@ -200,7 +363,7 @@ form.addEventListener("submit", function (event) {
   nameInput.focus();             // put the cursor back in the Name box
 });
 
-// ---------- 8. Delete an expense ----------
+// ---------- 9. Delete an expense ----------
 function deleteExpense(id) {
   expenses = expenses.filter(function (expense) {
     return expense.id !== id;
@@ -209,6 +372,35 @@ function deleteExpense(id) {
   render();
 }
 
-// ---------- 9. When the page first loads ----------
+// ---------- 10. Save or cancel an edit ----------
+function saveEdit(id, name, amountText, category, date) {
+  name = name.trim();
+  const amount = parseFloat(amountText);
+
+  if (name === "" || isNaN(amount) || amount <= 0) {
+    alert("Please enter a name and an amount greater than 0.");
+    return; // stay in edit mode so nothing typed is lost
+  }
+
+  // Find the expense with this id and update its values
+  const expense = expenses.find(function (e) {
+    return e.id === id;
+  });
+  expense.name = name;
+  expense.amount = amount;
+  expense.category = category;
+  expense.date = date; // may be empty for old undated expenses
+
+  editingId = null; // leave edit mode
+  saveExpenses();
+  render(); // redraws the total, the bars and the category totals too
+}
+
+function cancelEdit() {
+  editingId = null; // leave edit mode without changing anything
+  renderTable();
+}
+
+// ---------- 11. When the page first loads ----------
 dateInput.value = todayString(); // start the date box on today
 render();
