@@ -47,8 +47,21 @@
           </select>
         </div>
 
+        <div class="field">
+          <label for="date">Date</label>
+          <input type="date" id="date" required>
+        </div>
+
         <button type="submit" class="btn-primary">Add expense</button>
       </form>
+    </section>
+
+    <!-- Spending broken down by category -->
+    <section class="card">
+      <h2>Spending by category</h2>
+      <!-- JavaScript fills this in with one bar per category -->
+      <div id="category-summary"></div>
+      <p id="category-empty" class="empty">Your category breakdown will appear here.</p>
     </section>
 
     <!-- Table listing all expenses -->
@@ -58,6 +71,7 @@
         <table>
           <thead>
             <tr>
+              <th>Date</th>
               <th>Name</th>
               <th>Category</th>
               <th class="right">Amount</th>

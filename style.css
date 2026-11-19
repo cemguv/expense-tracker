@@ -74,7 +74,7 @@ h2 {
 /* ---------- Form ---------- */
 form {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr; /* two fields per row */
   gap: 12px;
   align-items: end;
 }
@@ -175,6 +175,50 @@ th {
 .btn-delete:hover {
   background: #fee2e2;
   color: var(--danger);
+}
+
+.date-cell {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* ---------- Spending by category (bars) ---------- */
+.category-row {
+  margin-bottom: 14px;
+}
+
+.category-row:last-child {
+  margin-bottom: 0;
+}
+
+.category-info {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-size: 0.95rem;
+}
+
+.category-amount {
+  font-weight: 600;
+}
+
+.category-percent {
+  color: var(--muted);
+  font-weight: 400;
+  margin-left: 6px;
+}
+
+.bar-track {
+  height: 10px;
+  background: #eef2ff;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  background: var(--primary);
+  border-radius: 999px;
 }
 
 .empty {
