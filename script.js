@@ -11,6 +11,9 @@ const categorySummary = document.getElementById("category-summary");
 const categoryEmpty = document.getElementById("category-empty");
 const categoryTable = document.getElementById("category-table");
 const categoryTableFooter = document.getElementById("category-table-footer");
+const categoryFilter = document.getElementById("category-filter");
+const resetFiltersButton = document.getElementById("reset-filters");
+const filterSummary = document.getElementById("filter-summary");
 
 // ---------- 2. Load saved expenses ----------
 // localStorage is a small storage area built into your browser.
@@ -20,6 +23,10 @@ let expenses = loadExpenses();
 
 // The id of the expense currently being edited (null means none)
 let editingId = null;
+
+// The category the expenses table is filtered to ("" means all categories).
+// Not saved, so the app always opens showing everything.
+let activeFilter = "";
 
 function loadExpenses() {
   try {
@@ -72,7 +79,14 @@ function renderTable() {
     return (b.date || "").localeCompare(a.date || "");
   });
 
-  sorted.forEach(function (expense) {
+  // Keep only the expenses in the chosen category (or all of them)
+  const visible = sorted.filter(function (expense) {
+    return activeFilter === "" || expense.category === activeFilter;
+  });
+
+  updateFilterControls(visible);
+
+  visible.forEach(function (expense) {
     // The row being edited is drawn as input boxes instead of plain text
     if (expense.id === editingId) {
       expenseList.appendChild(makeEditRow(expense));
@@ -122,8 +136,66 @@ function renderTable() {
   });
 
   // Show the "no expenses" message only when the list is empty
-  emptyMessage.style.display = expenses.length === 0 ? "block" : "none";
+  // Explain an empty table: no expenses at all, or none in the chosen category
+  if (expenses.length === 0) {
+    emptyMessage.textContent = "No expenses yet. Add your first one above.";
+  } else {
+    emptyMessage.textContent = "No " + activeFilter + " expenses yet.";
+  }
+  emptyMessage.style.display = visible.length === 0 ? "block" : "none";
 }
+
+// Fill the filter dropdown, and show/hide the Reset button and summary line
+function updateFilterControls(visible) {
+  // Same categories as the form's dropdown, so new ones appear automatically
+  const names = Array.from(categoryInput.options).map(function (option) {
+    return option.value;
+  });
+  // Plus any old category still used by a saved expense
+  expenses.forEach(function (expense) {
+    if (!names.includes(expense.category)) {
+      names.push(expense.category);
+    }
+  });
+  // Keep the chosen category listed even if its last expense was just deleted
+  if (activeFilter !== "" && !names.includes(activeFilter)) {
+    names.push(activeFilter);
+  }
+
+  // Rebuild the options after the first one ("All categories")
+  categoryFilter.length = 1;
+  names.forEach(function (name) {
+    categoryFilter.appendChild(new Option(name, name));
+  });
+  categoryFilter.value = activeFilter;
+
+  const filtering = activeFilter !== "";
+  resetFiltersButton.hidden = !filtering;
+  filterSummary.hidden = !filtering;
+
+  if (filtering) {
+    const sum = visible.reduce(function (s, expense) {
+      return s + expense.amount;
+    }, 0);
+    filterSummary.textContent =
+      "Showing " + visible.length + " of " + expenses.length + " expenses · " + formatMoney(sum);
+  }
+}
+
+// Change the filter and redraw the table (the summaries above are unaffected)
+function setFilter(category) {
+  activeFilter = category;
+  editingId = null; // close any open edit, so a hidden row isn't left mid-edit
+  renderTable();
+}
+
+categoryFilter.addEventListener("change", function () {
+  setFilter(categoryFilter.value);
+});
+
+resetFiltersButton.addEventListener("click", function () {
+  setFilter(""); // back to the default: all categories
+});
 
 // Build the editable version of a row: input boxes filled with the current values
 function makeEditRow(expense) {

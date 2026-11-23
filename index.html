@@ -100,7 +100,20 @@
 
     <!-- Table listing all expenses -->
     <section class="card">
-      <h2>Your expenses</h2>
+      <div class="card-header">
+        <h2>Your expenses</h2>
+        <!-- Category filter: only changes which rows this table shows -->
+        <div class="filter-controls">
+          <label for="category-filter">Show</label>
+          <select id="category-filter">
+            <!-- JavaScript adds one option per category after this one -->
+            <option value="">All categories</option>
+          </select>
+          <button type="button" id="reset-filters" class="btn-reset" hidden>Reset</button>
+        </div>
+      </div>
+      <!-- e.g. "Showing 3 of 12 expenses · $96.40", only while filtering -->
+      <p id="filter-summary" class="filter-summary" hidden></p>
       <div class="table-wrapper">
         <table>
           <thead>
